@@ -1,0 +1,51 @@
+pipeline {
+    agent any
+
+    environment {
+        IMAGE_NAME = "udhayakumarethiraj/udhay_images:staticweb"
+        CONTAINER_NAME = "static_web_app"
+    }
+
+    stages {
+
+        stage('Pull Image from Docker Hub') {
+            steps {
+                echo "Pulling Docker image $IMAGE_NAME"
+                sh 'docker pull $IMAGE_NAME'
+            }
+        }
+
+        stage('Stop Existing Container') {
+            steps {
+                echo "Stopping any existing container named $CONTAINER_NAME"
+                sh '''
+                if [ "$(docker ps -aq -f name=$CONTAINER_NAME)" ]; then
+                  docker stop $CONTAINER_NAME
+                  docker rm $CONTAINER_NAME
+                fi
+                '''
+            }
+        }
+
+        stage('Run Container') {
+            steps {
+                echo "Running container $CONTAINER_NAME from image $IMAGE_NAME"
+                sh '''
+                docker run -d \
+                  --name $CONTAINER_NAME \
+                  -p 80:80 \
+                  $IMAGE_NAME
+                '''
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Container deployed successfully on EC2!'
+        }
+        failure {
+            echo 'Deployment failed!'
+        }
+    }
+}
